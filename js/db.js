@@ -47,7 +47,8 @@ async function saveDB(){
   try{
     await CORE_DOC.set(DB);
     markSynced();
-  }catch(e){ console.error(e); markPending(); }
+    return true;
+  }catch(e){ console.error(e); markPending(); return false; }
 }
 
 const visitSaveQueues = new Map();
@@ -57,15 +58,16 @@ async function saveVisits(visitIds){
   const queueKey = ids ? ids.slice().sort().join('|') : '*';
   const previous = visitSaveQueues.get(queueKey) || Promise.resolve();
   const current = previous.catch(()=>{}).then(() => saveVisitsNow(ids));
-  visitSaveQueues.set(queueKey, current.finally(() => {
-    if(visitSaveQueues.get(queueKey) === current) visitSaveQueues.delete(queueKey);
-  }));
-  return current;
+  const tracked = current.finally(() => {
+    if(visitSaveQueues.get(queueKey) === tracked) visitSaveQueues.delete(queueKey);
+  });
+  visitSaveQueues.set(queueKey, tracked);
+  return tracked;
 }
 
 async function saveVisitsNow(visitIds){
   const toSave = visitIds ? VISITS.filter(v=>visitIds.includes(v.id)) : VISITS;
-  if(!toSave.length) return;
+  if(!toSave.length) return true;
 
   try{
     const batch = fdb.batch();
@@ -90,13 +92,15 @@ async function saveVisitsNow(visitIds){
         if(pendingSyncCount>0) pendingSyncCount = Math.max(0, pendingSyncCount-1);
         updateSyncBadge();
       }).catch(e=>console.error('Background visit sync failed:', e));
-      return;
+      return false;
     }
 
     markSynced();
+    return true;
   }catch(e){
     console.error('saveVisits failed:', e);
     markPending();
+    return false;
   }
 }
 
@@ -120,8 +124,9 @@ function updateSyncBadge(){
 }
 async function retryPendingSync(){
   if(!isOnline) return;
-  try{ await saveDB(); await saveVisits(); pendingSyncCount = 0; }
-  catch(e){ markPending(); }
+  const dbOk = await saveDB();
+  const visitsOk = await saveVisits();
+  if(dbOk && visitsOk) pendingSyncCount = 0;
   updateSyncBadge();
 }
 window.addEventListener('online', ()=>{ isOnline = true; updateSyncBadge(); showToast('🟢 عاد الاتصال — جارٍ المزامنة'); retryPendingSync(); });
