@@ -64,6 +64,15 @@ const found = DB.settings.adminUsers?.find(a=>a.username===u);
   }
 });
 
+
+
+// السماح بتسجيل الدخول من لوحة المفاتيح على الهاتف والكمبيوتر.
+document.querySelectorAll('#login-screen input').forEach(input=>{
+  input.addEventListener('keydown', e=>{
+    if(e.key === 'Enter') document.getElementById('btn-login').click();
+  });
+});
+
 document.getElementById('btn-logout').addEventListener('click', ()=>{
   addAudit('logout', session ? session.name : '');
   session = null;
