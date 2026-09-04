@@ -12,7 +12,13 @@ let pendingSyncCount = 0; // عدد عمليات الحفظ التي فشلت ب
 let isOnline = navigator.onLine;
 
 function uid(prefix){ return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
-function todayStr(d){ d = d || new Date(); return d.toISOString().slice(0,10); }
+function todayStr(d){
+  if(typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  const date = d instanceof Date ? d : new Date(d || Date.now());
+  if(Number.isNaN(date.getTime())) return '';
+  const pad = value => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
+}
 function nowIso(){ return new Date().toISOString(); }
 function fmtTime(iso){ if(!iso) return '—'; return new Date(iso).toLocaleTimeString('ar-JO',{hour:'2-digit',minute:'2-digit'}); }
 function fmtDate(d){ return new Date(d).toLocaleDateString('ar-JO'); }
