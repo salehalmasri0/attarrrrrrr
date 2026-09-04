@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="نظام مراقبة وأداء زيارات المنسّقين — شركة العطار">
+<meta name="theme-color" content="#21295C">
+<title>العطار — نظام مراقبة وأداء زيارات المنسقين</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📍</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<div id="login-screen" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="circle">ع</div>
+      <h1 style="font-size:16px;margin:0;">نظام مراقبة زيارات المنسقين</h1>
+      <p style="font-size:12px;color:var(--muted);margin:4px 0 0;">شركة العطار — مراقبة المبيعات</p>
+    </div>
+    <div class="role-switch">
+      <button type="button" class="active" id="role-admin-btn">إدارة</button>
+      <button type="button" id="role-coord-btn">منسّق مبيعات</button>
+    </div>
+    <div id="login-admin-form">
+      <label>اسم المستخدم</label>
+      <input type="text" id="lg-admin-user" placeholder="اسم المستخدم" autocomplete="off">
+      <label>كلمة المرور</label>
+      <input type="password" id="lg-admin-pass" placeholder="••••••••" autocomplete="new-password">
+    </div>
+    <div id="login-coord-form" style="display:none;">
+      <label>الرقم الوظيفي</label>
+      <input type="text" id="lg-coord-emp" placeholder="مثال: 1001" autocomplete="off">
+      <label>PIN</label>
+      <input type="password" id="lg-coord-pin" placeholder="••••" autocomplete="new-password">
+    </div>
+    <div class="login-err" id="login-err"></div>
+    <button class="btn-primary" id="btn-login">تسجيل الدخول</button>
+  </div>
+</div>
+<div class="app" id="app-root" style="display:none;">
+  <header>
+    <div class="deco"></div>
+    <div class="head-row">
+      <div><h1 id="hdr-title">نظام زيارات المنسقين</h1><p>شركة العطار — مراقبة المبيعات</p></div>
+      <div class="head-user"><b id="hdr-user">—</b><span id="hdr-role">—</span><span class="sync-badge online" id="sync-badge">🟢 متصل</span><button class="btn-logout" id="btn-logout">خروج</button></div>
+    </div>
+  </header>
+  <div class="body-row">
+    <nav id="sidebar-admin">
+      <div class="side-item active" data-tab="a-dashboard"><span class="ic">📊</span>لوحة التحكم</div>
+      <div class="side-item" data-tab="a-live"><span class="ic">🟢</span>المراقبة الحية</div>
+      <div class="side-item" data-tab="a-sites"><span class="ic">📍</span>المواقع</div>
+      <div class="side-item" data-tab="a-coords"><span class="ic">🧑‍💼</span>المنسّقون</div>
+      <div class="side-item" data-tab="a-schedules"><span class="ic">🗓️</span>الجدولة</div>
+      <div class="side-item" data-tab="a-performance"><span class="ic">🏆</span>الأداء</div>
+      <div class="side-item" data-tab="a-deductions"><span class="ic">💰</span>الخصومات</div>
+      <div class="side-item" data-tab="a-reports"><span class="ic">📑</span>التقارير</div>
+      <div class="side-item" data-tab="a-notifications"><span class="ic">⚠️</span>التنبيهات</div>
+      <div class="side-item" data-tab="a-audit"><span class="ic">🧾</span>سجل العمليات</div>
+      <div class="side-item" data-tab="a-settings"><span class="ic">⚙️</span>الإعدادات</div>
+    </nav>
+    <div class="content-col">
+      <div class="tabs" id="tabs-admin" style="display:none;">
+        <div class="tab active" data-tab="a-dashboard">لوحة التحكم</div><div class="tab" data-tab="a-live">المراقبة الحية</div><div class="tab" data-tab="a-sites">المواقع</div><div class="tab" data-tab="a-coords">المنسّقون</div><div class="tab" data-tab="a-schedules">الجدولة</div><div class="tab" data-tab="a-performance">الأداء</div><div class="tab" data-tab="a-deductions">الخصومات</div><div class="tab" data-tab="a-reports">التقارير</div><div class="tab" data-tab="a-notifications">التنبيهات</div><div class="tab" data-tab="a-audit">سجل العمليات</div><div class="tab" data-tab="a-settings">الإعدادات</div>
+      </div>
+      <div class="tabs" id="tabs-coord" style="display:none;"><div class="tab active" data-tab="c-today">جولة اليوم</div><div class="tab" data-tab="c-history">سجل زياراتي</div></div>
+      <main id="main-area"></main>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div><div id="modal-root"></div>
+<script src="js/firebase-config.js"></script>
+<script src="js/state.js"></script>
+<script src="js/security.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/admin-dashboard.js"></script>
+<script src="js/admin-sites.js"></script>
+<script src="js/admin-coords.js"></script>
+<script src="js/admin-schedules.js"></script>
+<script src="js/admin-deductions.js"></script>
+<script src="js/reports.js"></script>
+<script src="js/admin-notifications-audit-settings.js"></script>
+<script src="js/coord-views.js"></script>
+<script src="js/visit-flow.js?v=2026090303"></script>
+<script src="js/init.js"></script>
+</body>
+</html>
