@@ -109,8 +109,10 @@ function renderLiveMonitoring(){
         <span>الإنجاز: ${cov.rate}%</span>
       </div>
       ${detail}
+      ${(inProgress||last) ? `<button class="btn-ghost" style="margin-top:8px;width:100%;" data-mon-visit="${(inProgress||last).id}">عرض تفاصيل آخر زيارة</button>` : ''}
     </div>`;
   }).join('');
+  box.querySelectorAll('[data-mon-visit]').forEach(b=>b.addEventListener('click', ()=>viewVisitDetails(b.dataset.monVisit)));
 }
 
 /* ================= PERFORMANCE ADMIN ================= */

@@ -71,6 +71,15 @@ function openDeductionModal(date, cid){
   const c = coordById(cid);
   const cov = coverageFor(date, cid);
   const ded = deductionFor(date, cid);
+  const dayVisits = VISITS.filter(v=>v.date===date && v.coordId===cid).sort((a,b)=>(a.sequenceIndex||0)-(b.sequenceIndex||0));
+  const visitsHtml = dayVisits.length ? dayVisits.map(v=>`
+      <div class="list-item">
+        <div class="info">
+          <b>${v.status==='completed'?'🟢':'🟡'} ${escapeHtml(v.siteName)}</b>
+          <span>دخول ${fmtTime(v.entryTime)} — خروج ${fmtTime(v.exitTime)} — ${v.status==='completed'?'مكتملة':'قيد التنفيذ'}</span>
+        </div>
+        <button class="btn-ghost" data-visit-detail="${v.id}">التفاصيل والصور</button>
+      </div>`).join('') : '<div class="empty">لا توجد زيارات مسجّلة لهذا المنسّق بهذا التاريخ.</div>';
   openModal(`
     <div class="modal-head"><h3>خصم ${escapeHtml(c.name)} — ${fmtDate(date)}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
     <p>المطلوب: <b>${cov.required.length}</b> — المكتمل: <b>${cov.visitedPlanned.length}</b> — غير مزار: <b>${cov.unvisited.length}</b></p>
@@ -82,7 +91,10 @@ function openDeductionModal(date, cid){
     <textarea id="dd-reason" placeholder="مثال: تم إغلاق الموقع اليوم"></textarea>
     <button class="btn-primary" id="dd-save">حفظ التعديل</button>
     <button class="btn-secondary" id="dd-cancel-ded">إلغاء الخصم بالكامل (0 د.أ)</button>
+    <h4 style="margin:16px 0 6px;">زيارات هذا المنسّق في هذا اليوم</h4>
+    ${visitsHtml}
   `, true);
+  document.querySelectorAll('[data-visit-detail]').forEach(b=>b.addEventListener('click', ()=>viewVisitDetails(b.dataset.visitDetail)));
   document.getElementById('dd-save').addEventListener('click', async ()=>{
     if(!requireRole('admin')) return;
     const val = parseFloat(document.getElementById('dd-value').value)||0;
