@@ -27,7 +27,11 @@ document.getElementById('btn-login').addEventListener('click', async ()=>{
     if(isAdmin){
       const u = document.getElementById('lg-admin-user').value.trim();
       const p = document.getElementById('lg-admin-pass').value;
-      const found = DB.settings.adminUsers.find(a=>a.username===u);
+      if (!DB || !DB.settings) {
+  errEl.textContent = 'جاري الاتصال بقاعدة البيانات... يرجى الانتظار والمحاولة ثانية';
+  return;
+}
+const found = DB.settings.adminUsers?.find(a=>a.username===u);
       const ok = found ? await verifySecret(found.password, p) : false;
       if(!found || !ok){
         errEl.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة';
