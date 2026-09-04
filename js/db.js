@@ -50,7 +50,20 @@ async function saveDB(){
   }catch(e){ console.error(e); markPending(); }
 }
 
+const visitSaveQueues = new Map();
+
 async function saveVisits(visitIds){
+  const ids = visitIds ? [...new Set(visitIds)] : null;
+  const queueKey = ids ? ids.slice().sort().join('|') : '*';
+  const previous = visitSaveQueues.get(queueKey) || Promise.resolve();
+  const current = previous.catch(()=>{}).then(() => saveVisitsNow(ids));
+  visitSaveQueues.set(queueKey, current.finally(() => {
+    if(visitSaveQueues.get(queueKey) === current) visitSaveQueues.delete(queueKey);
+  }));
+  return current;
+}
+
+async function saveVisitsNow(visitIds){
   const toSave = visitIds ? VISITS.filter(v=>visitIds.includes(v.id)) : VISITS;
   if(!toSave.length) return;
 
