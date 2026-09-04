@@ -34,3 +34,4 @@ document.addEventListener('click', (e) => {
     `, true);
   }
 });
+});
