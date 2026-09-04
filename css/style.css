@@ -351,3 +351,10 @@
   @media (max-width:900px){
     .app.wide{ max-width:480px; }
   }
+img {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+img:hover {
+  opacity: 0.95;
+}
