@@ -81,7 +81,9 @@ function enterApp(){
   document.getElementById('hdr-user').textContent = session.name;
   document.getElementById('hdr-role').textContent = session.role==='admin' ? 'مدير مبيعات' : (session.role==='monitor' ? 'مراقب — اطلاع فقط' : ('منسّق مبيعات #' + session.employeeNo));
   document.getElementById('app-root').classList.toggle('wide', session.role!=='coordinator');
-  document.getElementById('sidebar-admin').style.display = session.role==='admin' ? 'flex' : 'none';
+  // تترك CSS تحديد نوع العرض: قائمة جانبية على سطح المكتب وتبويبات على الهاتف.
+  document.getElementById('sidebar-admin').style.display = session.role==='admin' ? '' : 'none';
+  document.getElementById('sidebar-monitor').style.display = session.role==='monitor' ? '' : 'none';
   document.getElementById('tabs-admin').style.display = session.role==='admin' ? 'flex':'none';
   document.getElementById('tabs-coord').style.display = session.role==='coordinator' ? 'flex':'none';
   document.getElementById('tabs-monitor').style.display = session.role==='monitor' ? 'flex':'none';
@@ -96,10 +98,12 @@ document.querySelectorAll('.tabs').forEach(box=>{
     setActiveTab(tab.dataset.tab);
   });
 });
-document.getElementById('sidebar-admin').addEventListener('click', (e)=>{
-  const item = e.target.closest('.side-item');
-  if(!item) return;
-  setActiveTab(item.dataset.tab);
+document.querySelectorAll('#sidebar-admin, #sidebar-monitor').forEach(sidebar=>{
+  sidebar.addEventListener('click', (e)=>{
+    const item = e.target.closest('.side-item');
+    if(!item) return;
+    setActiveTab(item.dataset.tab);
+  });
 });
 
 function setActiveTab(tabId){
