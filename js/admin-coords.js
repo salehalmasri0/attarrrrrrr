@@ -12,6 +12,11 @@ function renderCoordsAdmin(){
       <button class="btn-primary" id="btn-new-coord">+ إضافة منسّق</button>
     </div>
     <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><h3 style="margin:0;">حسابات المراقبين (${(DB.settings.monitorUsers||[]).length})</h3><button class="btn-primary" id="btn-new-monitor">+ إضافة مراقب</button></div>
+      <p class="sub">حسابات اطلاع فقط — لا تستطيع تعديل أي بيانات.</p>
+      <div id="monitor-accounts-list"></div>
+    </div>
+    <div class="card">
       <div class="filter-bar">
         <input type="text" id="cf-q" placeholder="🔍 بحث بالاسم أو الرقم الوظيفي" value="${escapeHtml(coordFilter.q)}">
         <select id="cf-region"><option value="">كل المناطق</option>${regions.map(r=>`<option value="${escapeHtml(r)}" ${coordFilter.region===r?'selected':''}>${escapeHtml(r)}</option>`).join('')}</select>
@@ -21,10 +26,12 @@ function renderCoordsAdmin(){
     </div>
   `;
   document.getElementById('btn-new-coord').addEventListener('click', ()=>openCoordModal(null));
+  document.getElementById('btn-new-monitor').addEventListener('click', ()=>openMonitorModal(null));
   document.getElementById('cf-q').addEventListener('input', e=>{ coordFilter.q=e.target.value; renderCoordsList(); });
   document.getElementById('cf-region').addEventListener('change', e=>{ coordFilter.region=e.target.value; renderCoordsList(); });
   document.getElementById('cf-clear').addEventListener('click', ()=>{ coordFilter={q:'',region:''}; renderCoordsAdmin(); });
   renderCoordsList();
+  renderMonitorAccounts();
 }
 function renderCoordsList(){
   const box = document.getElementById('coords-list');
@@ -49,6 +56,50 @@ function renderCoordsList(){
   box.querySelectorAll('[data-profile]').forEach(b=>b.addEventListener('click', ()=>openCoordProfile(b.dataset.profile)));
 }
 
+function renderMonitorAccounts(){
+  const box=document.getElementById('monitor-accounts-list');
+  if(!box) return;
+  const users=DB.settings.monitorUsers||[];
+  if(!users.length){ box.innerHTML='<div class="empty">لا توجد حسابات مراقبين بعد.</div>'; return; }
+  box.innerHTML=users.map(u=>`<div class='list-item'><div class='info'><b>${escapeHtml(u.name)} ${u.active?'':'— معطّل'}</b><span>اسم المستخدم: ${escapeHtml(u.username)} — اطلاع فقط</span></div><div class='actions'><button class='icon-btn' data-monitor-edit='${escapeHtml(u.id)}'>تعديل</button></div></div>`).join('');
+  box.querySelectorAll('[data-monitor-edit]').forEach(b=>b.addEventListener('click',()=>openMonitorModal(b.dataset.monitorEdit)));
+}
+
+function openMonitorModal(id){
+  if(!requireRole('admin')) return;
+  if(!DB.settings.monitorUsers) DB.settings.monitorUsers=[];
+  const current=id ? DB.settings.monitorUsers.find(u=>u.id===id) : {id:uid('mon'),name:'',username:'',password:'',active:true};
+  if(!current) return;
+  openModal(`
+    <div class='modal-head'><h3>${id?'تعديل حساب مراقب':'إضافة حساب مراقب'}</h3><button class='modal-close' onclick='closeModal()'>✕</button></div>
+    <label>اسم المراقب</label><input type='text' id='m-monitor-name' value='${escapeHtml(current.name)}'>
+    <label>اسم المستخدم</label><input type='text' id='m-monitor-username' value='${escapeHtml(current.username)}' autocomplete='off'>
+    <label>كلمة المرور ${id?'(اتركها فارغة لعدم تغييرها)':''}</label><input type='password' id='m-monitor-password' placeholder='${id?'••••••••':'كلمة مرور جديدة'}' autocomplete='new-password'>
+    <div class='checkline'><input type='checkbox' id='m-monitor-active' ${current.active?'checked':''}><label style='margin:0;' for='m-monitor-active'>حساب نشط</label></div>
+    <button class='btn-primary' id='m-monitor-save'>حفظ الحساب</button>
+    ${id?"<button class='btn-secondary' style='color:var(--danger);border-color:#F3D3CE;' id='m-monitor-delete'>حذف الحساب</button>":''}
+  `);
+  document.getElementById('m-monitor-save').addEventListener('click',async()=>{
+    const name=document.getElementById('m-monitor-name').value.trim();
+    const username=document.getElementById('m-monitor-username').value.trim();
+    const password=document.getElementById('m-monitor-password').value;
+    if(!name||!username) return showToast('الرجاء إدخال اسم المراقب واسم المستخدم');
+    if(!id&&!password) return showToast('الرجاء إدخال كلمة مرور للحساب الجديد');
+    const duplicate=DB.settings.monitorUsers.some(u=>u.username===username&&u.id!==current.id);
+    if(duplicate || DB.settings.adminUsers?.some(u=>u.username===username)) return showToast('اسم المستخدم مستخدم مسبقًا');
+    const savedPassword=password ? await hashSecret(password) : current.password;
+    const updated={id:current.id,name,username,password:savedPassword,active:document.getElementById('m-monitor-active').checked};
+    const idx=DB.settings.monitorUsers.findIndex(u=>u.id===current.id);
+    if(idx>=0) DB.settings.monitorUsers[idx]=updated; else DB.settings.monitorUsers.push(updated);
+    await saveDB(); addAudit(idx>=0?'edit_monitor':'add_monitor',name); closeModal(); renderCoordsAdmin(); showToast('✔ تم حفظ حساب المراقب');
+  });
+  const del=document.getElementById('m-monitor-delete');
+  if(del) del.addEventListener('click',async()=>{
+    if(!confirm('حذف حساب المراقب نهائيًا؟')) return;
+    DB.settings.monitorUsers=DB.settings.monitorUsers.filter(u=>u.id!==current.id);
+    await saveDB(); addAudit('delete_monitor',current.name); closeModal(); renderCoordsAdmin();
+  });
+}
 function openCoordModal(id){
   if(!requireRole('admin')) return;
   const c = id ? coordById(id) : { id: uid('co'), name:'', employeeNo:'', pin:'', phone:'', region:'', manager:'مدير المبيعات', active:true };
