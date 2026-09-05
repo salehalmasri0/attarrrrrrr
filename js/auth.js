@@ -4,60 +4,55 @@
    ========================================================= */
 
 /* ================= AUTH ================= */
-document.getElementById('role-admin-btn').addEventListener('click', ()=>{
-  document.getElementById('role-admin-btn').classList.add('active');
-  document.getElementById('role-coord-btn').classList.remove('active');
-  document.getElementById('login-admin-form').style.display='block';
-  document.getElementById('login-coord-form').style.display='none';
-});
-document.getElementById('role-coord-btn').addEventListener('click', ()=>{
-  document.getElementById('role-coord-btn').classList.add('active');
-  document.getElementById('role-admin-btn').classList.remove('active');
-  document.getElementById('login-coord-form').style.display='block';
-  document.getElementById('login-admin-form').style.display='none';
-});
-
+function selectLoginRole(role){
+  const isAdmin = role==='admin';
+  const isCoord = role==='coordinator';
+  document.getElementById('role-admin-btn').classList.toggle('active', isAdmin);
+  document.getElementById('role-coord-btn').classList.toggle('active', isCoord);
+  document.getElementById('role-monitor-btn').classList.toggle('active', role==='monitor');
+  document.getElementById('login-admin-form').style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('login-coord-form').style.display = isCoord ? 'block' : 'none';
+  document.getElementById('login-monitor-form').style.display = role==='monitor' ? 'block' : 'none';
+}
+document.getElementById('role-admin-btn').addEventListener('click', ()=>selectLoginRole('admin'));
+document.getElementById('role-coord-btn').addEventListener('click', ()=>selectLoginRole('coordinator'));
+document.getElementById('role-monitor-btn').addEventListener('click', ()=>selectLoginRole('monitor'));
 document.getElementById('btn-login').addEventListener('click', async ()=>{
   const errEl = document.getElementById('login-err');
   errEl.textContent = '';
   const loginBtn = document.getElementById('btn-login');
   loginBtn.disabled = true;
   try{
-    const isAdmin = document.getElementById('role-admin-btn').classList.contains('active');
-    if(isAdmin){
+    const selectedRole = document.getElementById('role-monitor-btn').classList.contains('active') ? 'monitor' : (document.getElementById('role-coord-btn').classList.contains('active') ? 'coordinator' : 'admin');
+    if(selectedRole==='admin'){
       const u = document.getElementById('lg-admin-user').value.trim();
       const p = document.getElementById('lg-admin-pass').value;
-      if (!DB || !DB.settings) {
-  errEl.textContent = 'جاري الاتصال بقاعدة البيانات... يرجى الانتظار والمحاولة ثانية';
-  return;
-}
-const found = DB.settings.adminUsers?.find(a=>a.username===u);
+      if (!DB || !DB.settings) { errEl.textContent = 'جاري الاتصال بقاعدة البيانات... يرجى الانتظار والمحاولة ثانية'; return; }
+      const found = DB.settings.adminUsers?.find(a=>a.username===u);
       const ok = found ? await verifySecret(found.password, p) : false;
-      if(!found || !ok){
-        errEl.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة';
-        failedLoginAttempts.unshift({at: nowIso(), who: 'admin: '+u});
-        failedLoginAttempts.length = Math.min(failedLoginAttempts.length, 20);
-        return;
-      }
-      // ترقية صامتة لأي كلمة مرور قديمة غير مجزّأة إلى SHA-256 عند أول دخول ناجح
+      if(!found || !ok){ errEl.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة'; failedLoginAttempts.unshift({at: nowIso(), who: 'admin: '+u}); failedLoginAttempts.length = Math.min(failedLoginAttempts.length, 20); return; }
       if(!looksHashed(found.password)){ found.password = await hashSecret(p); await saveDB(); }
       session = { role:'admin', name: found.name, username: found.username };
-    } else {
+    } else if(selectedRole==='coordinator'){
       const emp = document.getElementById('lg-coord-emp').value.trim();
       const pin = document.getElementById('lg-coord-pin').value;
       const found = DB.coordinators.find(c=>c.employeeNo===emp);
       const ok = found ? await verifySecret(found.pin, pin) : false;
-      if(!found || !ok){
-        errEl.textContent = 'الرقم الوظيفي أو PIN غير صحيح';
-        failedLoginAttempts.unshift({at: nowIso(), who: 'منسّق: '+emp});
-        failedLoginAttempts.length = Math.min(failedLoginAttempts.length, 20);
-        return;
-      }
+      if(!found || !ok){ errEl.textContent = 'الرقم الوظيفي أو PIN غير صحيح'; failedLoginAttempts.unshift({at: nowIso(), who: 'منسّق: '+emp}); failedLoginAttempts.length = Math.min(failedLoginAttempts.length, 20); return; }
       if(!found.active){ errEl.textContent = 'هذا الحساب معطّل، راجع الإدارة'; return; }
       if(!looksHashed(found.pin)){ found.pin = await hashSecret(pin); await saveDB(); }
       session = { role:'coordinator', name: found.name, id: found.id, employeeNo: found.employeeNo };
+    } else {
+      const u = document.getElementById('lg-monitor-user').value.trim();
+      const p = document.getElementById('lg-monitor-pass').value;
+      const found = DB.settings.monitorUsers?.find(a=>a.username===u);
+      const ok = found ? await verifySecret(found.password, p) : false;
+      if(!found || !ok){ errEl.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة'; failedLoginAttempts.unshift({at: nowIso(), who: 'مراقب: '+u}); failedLoginAttempts.length = Math.min(failedLoginAttempts.length, 20); return; }
+      if(!found.active){ errEl.textContent = 'هذا الحساب معطّل، راجع الإدارة'; return; }
+      if(!looksHashed(found.password)){ found.password = await hashSecret(p); await saveDB(); }
+      session = { role:'monitor', name: found.name, username: found.username };
     }
-    addAudit('login', session.role + ' - ' + session.name);
+        addAudit('login', session.role + ' - ' + session.name);
     enterApp();
   } finally {
     loginBtn.disabled = false;
@@ -84,15 +79,16 @@ function enterApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-root').style.display='flex';
   document.getElementById('hdr-user').textContent = session.name;
-  document.getElementById('hdr-role').textContent = session.role==='admin' ? 'مدير مبيعات' : ('منسّق مبيعات #' + session.employeeNo);
-  document.getElementById('app-root').classList.toggle('wide', session.role==='admin');
+  document.getElementById('hdr-role').textContent = session.role==='admin' ? 'مدير مبيعات' : (session.role==='monitor' ? 'مراقب — اطلاع فقط' : ('منسّق مبيعات #' + session.employeeNo));
+  document.getElementById('app-root').classList.toggle('wide', session.role!=='coordinator');
+  document.getElementById('sidebar-admin').style.display = session.role==='admin' ? 'flex' : 'none';
   document.getElementById('tabs-admin').style.display = session.role==='admin' ? 'flex':'none';
   document.getElementById('tabs-coord').style.display = session.role==='coordinator' ? 'flex':'none';
+  document.getElementById('tabs-monitor').style.display = session.role==='monitor' ? 'flex':'none';
   updateSyncBadge();
-  const firstTab = session.role==='admin' ? 'a-dashboard' : 'c-today';
+  const firstTab = session.role==='admin' ? 'a-dashboard' : (session.role==='monitor' ? 'm-performance' : 'c-today');
   setActiveTab(firstTab);
 }
-
 document.querySelectorAll('.tabs').forEach(box=>{
   box.addEventListener('click', (e)=>{
     const tab = e.target.closest('.tab');
@@ -126,6 +122,7 @@ function requireRole(role){
 }
 const ADMIN_TABS = new Set(['a-dashboard','a-live','a-sites','a-coords','a-schedules','a-performance','a-deductions','a-reports','a-notifications','a-audit','a-settings']);
 const COORD_TABS = new Set(['c-today','c-history']);
+const MONITOR_TABS = new Set(['m-performance','m-visits']);
 
 function renderMain(){
   const main = document.getElementById('main-area');
@@ -145,6 +142,8 @@ function renderMain(){
     'a-settings': renderSettingsAdmin,
     'c-today': renderCoordToday,
     'c-history': renderCoordHistory,
+    'm-performance': renderMonitorPerformance,
+    'm-visits': renderMonitorVisits,
   };
   main.innerHTML = '';
   (renderers[activeTab] || function(){ main.innerHTML='<div class="empty">—</div>'; })();
