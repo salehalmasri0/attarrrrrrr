@@ -23,6 +23,7 @@
     <div class="role-switch">
       <button type="button" class="active" id="role-admin-btn">إدارة</button>
       <button type="button" id="role-coord-btn">منسّق مبيعات</button>
+      <button type="button" id="role-monitor-btn">مراقب</button>
     </div>
     <div id="login-admin-form">
       <label>اسم المستخدم</label>
@@ -35,6 +36,12 @@
       <input type="text" id="lg-coord-emp" placeholder="مثال: 1001" autocomplete="off">
       <label>PIN</label>
       <input type="password" id="lg-coord-pin" placeholder="••••" autocomplete="new-password">
+    </div>
+    <div id="login-monitor-form" style="display:none;">
+      <label>اسم المستخدم (المراقب)</label>
+      <input type="text" id="lg-monitor-user" placeholder="اسم المستخدم" autocomplete="off">
+      <label>كلمة المرور</label>
+      <input type="password" id="lg-monitor-pass" placeholder="••••••••" autocomplete="new-password">
     </div>
     <div class="login-err" id="login-err"></div>
     <button class="btn-primary" id="btn-login">تسجيل الدخول</button>
@@ -62,11 +69,16 @@
       <div class="side-item" data-tab="a-audit"><span class="ic">🧾</span>سجل العمليات</div>
       <div class="side-item" data-tab="a-settings"><span class="ic">⚙️</span>الإعدادات</div>
     </nav>
+    <nav id="sidebar-monitor" style="display:none;">
+      <div class="side-item active" data-tab="m-performance"><span class="ic">🏆</span>الأداء</div>
+      <div class="side-item" data-tab="m-visits"><span class="ic">📷</span>الزيارات والصور</div>
+    </nav>
     <div class="content-col">
       <div class="tabs" id="tabs-admin" style="display:none;">
         <div class="tab active" data-tab="a-dashboard">لوحة التحكم</div><div class="tab" data-tab="a-live">المراقبة الحية</div><div class="tab" data-tab="a-sites">المواقع</div><div class="tab" data-tab="a-coords">المنسّقون</div><div class="tab" data-tab="a-schedules">الجدولة</div><div class="tab" data-tab="a-performance">الأداء</div><div class="tab" data-tab="a-deductions">الخصومات</div><div class="tab" data-tab="a-reports">التقارير</div><div class="tab" data-tab="a-notifications">التنبيهات</div><div class="tab" data-tab="a-audit">سجل العمليات</div><div class="tab" data-tab="a-settings">الإعدادات</div>
       </div>
       <div class="tabs" id="tabs-coord" style="display:none;"><div class="tab active" data-tab="c-today">جولة اليوم</div><div class="tab" data-tab="c-history">سجل زياراتي</div></div>
+      <div class="tabs" id="tabs-monitor" style="display:none;"><div class="tab active" data-tab="m-performance">الأداء</div><div class="tab" data-tab="m-visits">الزيارات والصور</div></div>
       <main id="main-area"></main>
     </div>
   </div>
