@@ -60,9 +60,21 @@ function renderPhotoStep(key, title){
 function renderStockStep(){
   const products = vf.site.requiredProducts || [];
   const existing = vf.visit && vf.visit.stock ? vf.visit.stock : [];
+  if(products.length===0){
+    const totalStock = existing.find(e=>e.product==='إجمالي الستوك');
+    const existingNotes = (vf.visit && vf.visit.notes) || vf.notesInput || '';
+    return `
+      <p class="sub">لا توجد منتجات محددة لهذا الموقع. سجّل إجمالي عدد وحدات الستوك الموجودة وأضف ملاحظاتك.</p>
+      <label for="vf-total-stock">إجمالي عدد الستوك</label>
+      <input type="number" min="0" step="1" id="vf-total-stock" inputmode="numeric" value="${totalStock ? totalStock.qty : ''}" placeholder="مثال: 25">
+      <label for="vf-stock-notes">ملاحظات</label>
+      <textarea id="vf-stock-notes" placeholder="مثال: لا توجد منتجات محددة، أو ملاحظات عن الكمية...">${escapeHtml(existingNotes)}</textarea>
+      <button class="btn-primary" id="vf-next">متابعة</button>
+    `;
+  }
   return `
     <p class="sub">أدخل كمية الستوك المتوفرة لكل منتج مطلوب في هذا الموقع.</p>
-    ${products.length===0 ? '<div class="empty">لا توجد منتجات محددة لهذا الموقع.</div>' : products.map(p=>{
+    ${products.map(p=>{
       const found = existing.find(e=>e.product===p);
       return `<label>${escapeHtml(p)}</label><input type="number" min="0" class="vf-stock-input" data-product="${escapeHtml(p)}" value="${found?found.qty:''}">`;
     }).join('')}
@@ -137,6 +149,19 @@ function wireVisitStep(cur){
   }
   if(cur==='stock'){
     nextBtn.addEventListener('click', ()=>{
+      if((vf.site.requiredProducts || []).length===0){
+        const totalInput = document.getElementById('vf-total-stock');
+        const rawTotal = totalInput ? totalInput.value.trim() : '';
+        const total = Number(rawTotal);
+        if(rawTotal==='' || !Number.isInteger(total) || total<0){
+          showToast('أدخل عدد الستوك كرقم صحيح، ويمكن أن يكون صفرًا');
+          return;
+        }
+        vf.stockInput = {'إجمالي الستوك': total};
+        vf.notesInput = document.getElementById('vf-stock-notes').value.trim();
+        advanceStep();
+        return;
+      }
       const inputs = document.querySelectorAll('.vf-stock-input');
       vf.stockInput = {};
       inputs.forEach(inp=>{ if(inp.value!=='') vf.stockInput[inp.dataset.product] = parseInt(inp.value)||0; });
