@@ -6,7 +6,7 @@
    INIT
    ========================================================= */
 function clearLoginFields(){
-  ['lg-admin-user','lg-admin-pass','lg-coord-emp','lg-coord-pin'].forEach(id=>{
+  ['lg-admin-user','lg-admin-pass','lg-coord-emp','lg-coord-pin','lg-monitor-user','lg-monitor-pass'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.value = '';
   });
