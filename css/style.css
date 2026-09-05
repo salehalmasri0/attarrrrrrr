@@ -320,14 +320,16 @@
 
   .body-row{ display:flex; flex:1; align-items:flex-start; }
   .content-col{ flex:1; min-width:0; display:flex; flex-direction:column; }
-  #sidebar-admin{ display:none; }
+  #sidebar-admin, #sidebar-monitor{ display:none; }
   .app.wide{ max-width:1180px; }
   @media (min-width:901px){
-    .app.wide #sidebar-admin{
+    .app.wide #sidebar-admin,
+    .app.wide #sidebar-monitor{
       display:block; width:210px; flex:0 0 210px; background:#fff; border-left:1px solid var(--border);
       min-height:calc(100vh - 78px); padding:14px 10px;
     }
-    .app.wide #tabs-admin{ display:none !important; }
+    .app.wide #tabs-admin,
+    .app.wide #tabs-monitor{ display:none !important; }
     .app.wide .side-item{
       display:flex; align-items:center; gap:9px; padding:10px 12px; border-radius:9px; font-size:13px;
       font-weight:600; color:var(--muted); cursor:pointer; margin-bottom:3px; white-space:nowrap;
