@@ -14,7 +14,19 @@ function clearLoginFields(){
 clearLoginFields();
 window.addEventListener('load', ()=>{ clearLoginFields(); setTimeout(clearLoginFields, 60); setTimeout(clearLoginFields, 300); });
 
+function loadMonitorViews(){
+  if(typeof renderMonitorPerformance === 'function' && typeof renderMonitorVisits === 'function') return Promise.resolve();
+  return new Promise((resolve, reject)=>{
+    const script = document.createElement('script');
+    script.src = 'js/monitor-views.js';
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('تعذر تحميل واجهات المراقب'));
+    document.head.appendChild(script);
+  });
+}
+
 (async function init(){
+  await loadMonitorViews();
   await loadAll();
 })();
 
