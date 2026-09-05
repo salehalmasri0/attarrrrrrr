@@ -7,6 +7,7 @@ function defaultDB(){
   return {
     settings:{
       adminUsers:[{username:'admin', password:'240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', name:'مدير المبيعات'}],
+       monitorUsers:[],
       deductionPerSite: 1,
       dayCloseTime: '20:00',
       closedDates: [],
@@ -29,6 +30,7 @@ async function loadAll(){
   }catch(e){ console.error(e); DB = null; }
   if(!DB){ DB = defaultDB(); await saveDB(); }
   if(!DB.settings.performanceWeights) DB.settings.performanceWeights = { attendance:40, tasks:20, gps:15, photo:10, stock:10, notes:5 };
+  if(!DB.settings.monitorUsers) DB.settings.monitorUsers = [];
   if(!DB.weeklyPatterns) DB.weeklyPatterns = {};
   if(!DB.leaves) DB.leaves = {};
   if(DB.settings.closedDates===undefined) DB.settings.closedDates = [];
